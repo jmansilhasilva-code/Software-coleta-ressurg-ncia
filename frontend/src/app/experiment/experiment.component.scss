@@ -1,0 +1,175 @@
+:host {
+  display: block;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.screen {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #f4f5f7;
+}
+
+/* Barra de pontos */
+.topbar {
+  flex: 0 0 auto;
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.points-bar {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  background: #c7cbd1; /* cinza padrão */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.08s linear;
+}
+
+.points-bar.green {
+  background: #16a34a;
+}
+
+.points-bar.red {
+  background: #dc2626;
+}
+
+.points {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.dev {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #555;
+  background: #fff;
+  padding: 0.3rem 0.55rem;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+/* Banners de feedback */
+.banner {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #16a34a;
+  color: #fff;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.cost {
+  position: absolute;
+  top: 64px;
+  right: 1rem;
+  color: #dc2626;
+  font-size: 1.6rem;
+  font-weight: 800;
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* Arena */
+.arena {
+  position: relative;
+  flex: 1 1 auto;
+  margin: 0.4rem 0.8rem 0.8rem;
+  border-radius: 14px;
+  background: rgba(37, 99, 235, 0.06); /* retângulo semitransparente */
+  border: 1px dashed rgba(37, 99, 235, 0.25);
+  overflow: hidden;
+}
+
+.play-btn {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  touch-action: none;
+}
+
+/* Overlays */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding: 1.5rem;
+}
+
+.overlay-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 2rem 1.75rem;
+  max-width: 380px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.overlay-card h2 {
+  margin: 0 0 0.5rem;
+}
+
+.overlay-card p {
+  margin: 0 0 1.25rem;
+  color: #555;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cta {
+  padding: 0.85rem 1.5rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  background: #2563eb;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.ghost {
+  padding: 0.7rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2563eb;
+  background: transparent;
+  border: 1px solid #2563eb;
+  border-radius: 10px;
+  cursor: pointer;
+}

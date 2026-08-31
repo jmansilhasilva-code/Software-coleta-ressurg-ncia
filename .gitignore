@@ -1,0 +1,23 @@
+# Python / Django
+backend_venv/
+__pycache__/
+*.pyc
+backend/.env
+backend/db.sqlite3
+*.sqlite3
+
+# Node / Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+npm-debug.log*
+
+# OS
+.DS_Store
+
+# Áudio grande (baixar localmente)
+# frontend/src/assets/WorstSound1.mp3
+
+# Artigo científico de terceiros (direitos autorais) — repo é público, não republicar.
+# Fica só no seu computador; baixe de novo se precisar em outra máquina.
+"(humanos) Martinez‐Perez  et al. (2024) A parametric manipulation and meta‐analysis of target‐response punishment on resurgence.pdf"

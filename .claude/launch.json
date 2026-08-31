@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["frontend/preview-serve.sh"],
+      "port": 4200,
+      "autoPort": false
+    }
+  ]
+}

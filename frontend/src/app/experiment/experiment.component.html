@@ -1,0 +1,51 @@
+<div class="screen" *ngIf="config">
+  <!-- Barra de pontos (sempre visível) -->
+  <div class="topbar">
+    <div class="points-bar" [class.green]="barFlash === 'green'" [class.red]="barFlash === 'red'">
+      <span class="points">{{ points }}</span>
+    </div>
+    <div class="dev" *ngIf="devMode">
+      Fase {{ phase }} · {{ config.group }} · {{ remainingS }}s
+    </div>
+  </div>
+
+  <!-- Feedback de reforço / custo -->
+  <div class="banner" *ngIf="showReinforcement">Você acertou 🙂</div>
+  <div class="cost" *ngIf="costText">{{ costText }}</div>
+
+  <!-- Arena com os três botões -->
+  <div #arena class="arena">
+    <button
+      *ngFor="let b of buttons"
+      class="play-btn"
+      [style.left.px]="b.x"
+      [style.top.px]="b.y"
+      [style.opacity]="b.opacity"
+      (pointerdown)="onResponse(b.role, $event)"
+      type="button"
+    >
+      {{ b.symbol }}
+    </button>
+  </div>
+
+  <!-- Overlay de início -->
+  <div class="overlay" *ngIf="prestart">
+    <div class="overlay-card">
+      <h2>Pronto para começar?</h2>
+      <p>Toque nos símbolos para ganhar pontos. Tente fazer o máximo de pontos.</p>
+      <button class="cta" (click)="begin()" type="button">Começar</button>
+    </div>
+  </div>
+
+  <!-- Overlay de conclusão -->
+  <div class="overlay" *ngIf="finished">
+    <div class="overlay-card">
+      <h2>Sessão concluída</h2>
+      <p>Obrigado pela participação!</p>
+      <div class="actions">
+        <button class="cta" (click)="downloadData()" type="button">Baixar dados (JSON)</button>
+        <button class="ghost" (click)="backToOperator()" type="button">Nova sessão</button>
+      </div>
+    </div>
+  </div>
+</div>

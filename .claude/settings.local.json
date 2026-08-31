@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/joao/Sites/Claude/**)",
+      "Bash(find /Users/joao -maxdepth 5 \\\\\\( -iname \"*martinez*\" -o -iname \"*perez*\" -o -iname \"*PIC*\" \\\\\\) -type f 2>/dev/null | head -30; echo \"---PDFs em Sites/Claude e Downloads---\"; find /Users/joao/Sites/Claude /Users/joao/Downloads /Users/joao/Desktop /Users/joao/Documents -maxdepth 3 -iname \"*.pdf\" 2>/dev/null | head -40)"
+    ]
+  }
+}
