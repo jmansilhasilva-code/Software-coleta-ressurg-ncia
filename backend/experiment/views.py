@@ -10,7 +10,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from . import protocol
+from . import analytics, protocol
 from .models import Event, Group, Participant, Session
 from .serializers import (
     EventBatchSerializer,
@@ -52,6 +52,7 @@ class SessionViewSet(viewsets.ModelViewSet):
             participant=participant,
             group=group,
             counterbalance=protocol.build_counterbalance(),
+            dev_mode=data.get("dev_mode", False),
         )
         return Response(
             {
@@ -84,6 +85,10 @@ class SessionViewSet(viewsets.ModelViewSet):
         batch.is_valid(raise_exception=True)
         rows = batch.validated_data["events"]
         Event.objects.bulk_create([Event(session=session, **row) for row in rows])
+        # Recalcula pontuação/cliques-min/reforços-min/bins de 10s para cada
+        # fase presente neste lote (regra: sempre desagregar dados por fase).
+        for phase in sorted({row["phase"] for row in rows}):
+            analytics.recompute_phase_stats(session, phase)
         return Response({"created": len(rows)}, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["get"])
@@ -122,6 +127,100 @@ class SessionViewSet(viewsets.ModelViewSet):
                     e.points_delta,
                     e.points_total,
                     e.sound_ms if e.sound_ms is not None else "",
+                ]
+            )
+        return response
+
+    @action(detail=True, methods=["get"], url_path="export-phase-stats")
+    def export_phase_stats(self, request, pk=None):
+        """Exporta pontuação/cliques-min/reforços-min por fase e por botão."""
+        session = self.get_object()
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = (
+            f'attachment; filename="session_{session.id}_phase_stats.csv"'
+        )
+        writer = csv.writer(response)
+        writer.writerow(
+            [
+                "session_id",
+                "participant",
+                "group",
+                "phase",
+                "phase_points_start",
+                "phase_points_end",
+                "phase_points_delta",
+                "phase_duration_s",
+                "button_role",
+                "response_count",
+                "responses_per_minute",
+                "reinforcement_count",
+                "reinforcements_per_minute",
+                "cost_count",
+                "button_points_delta",
+            ]
+        )
+        phase_stats = {p.phase: p for p in session.phase_stats.all()}
+        for bp in session.button_phase_stats.all():
+            ps = phase_stats.get(bp.phase)
+            writer.writerow(
+                [
+                    session.id,
+                    session.participant.external_id,
+                    session.group,
+                    bp.phase,
+                    ps.points_start if ps else "",
+                    ps.points_end if ps else "",
+                    ps.points_delta if ps else "",
+                    ps.duration_s if ps else "",
+                    bp.button_role,
+                    bp.response_count,
+                    round(bp.responses_per_minute, 2),
+                    bp.reinforcement_count,
+                    round(bp.reinforcements_per_minute, 2),
+                    bp.cost_count,
+                    bp.points_delta,
+                ]
+            )
+        return response
+
+    @action(detail=True, methods=["get"], url_path="export-bins")
+    def export_bins(self, request, pk=None):
+        """Exporta a contagem de respostas por botão em bins de 10 s."""
+        session = self.get_object()
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = (
+            f'attachment; filename="session_{session.id}_bins.csv"'
+        )
+        writer = csv.writer(response)
+        writer.writerow(
+            [
+                "session_id",
+                "participant",
+                "group",
+                "phase",
+                "button_role",
+                "bin_index",
+                "bin_start_s",
+                "bin_end_s",
+                "response_count",
+                "reinforcement_count",
+                "cost_count",
+            ]
+        )
+        for b in session.phase_bins.all():
+            writer.writerow(
+                [
+                    session.id,
+                    session.participant.external_id,
+                    session.group,
+                    b.phase,
+                    b.button_role,
+                    b.bin_index,
+                    b.bin_start_s,
+                    b.bin_end_s,
+                    b.response_count,
+                    b.reinforcement_count,
+                    b.cost_count,
                 ]
             )
         return response

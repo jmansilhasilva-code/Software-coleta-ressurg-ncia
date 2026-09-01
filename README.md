@@ -22,8 +22,9 @@ iteração.
 > Implementado assim; alternável na constante `UNIVERSAL_COST_IN_PHASE3` em
 > `frontend/src/app/experiment/experiment.component.ts`.
 
-> ⚠️ **Opacidade dos botões:** o PDF descreve o esmaecimento para 2 botões, mas há 3.
-> Implementado: último botão tocado a 100%, os demais a 50%.
+> ⚠️ **Opacidade dos botões:** o PDF descreve o esmaecimento para 2 botões, mas há 4
+> (R1, R2, CONTROL1, CONTROL2). Implementado: último botão tocado a 100%, os
+> demais a 50%.
 
 ---
 
@@ -106,6 +107,46 @@ em `backend/.env`.
 | `RC1000` | Custo de −1000 pts (sem som)                     |
 | `SOM2`   | Custo −1 + som aversivo de 2 s                   |
 | `SOM5`   | Custo −1 + som aversivo de 5 s                   |
+
+## Changeover delay (COD)
+
+Orientação do orientador: trocar de botão bloqueia o reforço no novo botão por
+**2 segundos** (mesmo valor da média do VI da tarefa), para não reforçar a própria
+alternância entre respostas. Aplica-se de forma geral entre quaisquer botões (R1, R2,
+Controle), não só entre R1 e R2. Precedente na literatura: Sweeney & Shahan (2015)
+usaram 3 s com o mesmo propósito num procedimento de ressurgência. Parâmetro
+`CHANGEOVER_DELAY_MS` em `backend/experiment/protocol.py`.
+
+## Interface adaptada do estudo original (Martinez-Perez et al., 2024)
+
+Comparamos a interface com o apêndice do artigo original e adaptamos dois pontos:
+
+- **Botões confinados a 4 quadrados (workspaces)**: cada botão se move 20px/0,2s em
+  4 direções (igual ao artigo original), mas dentro do seu próprio quadrado fixo, numa
+  grade 2x2 — nunca invade o espaço dos outros 3. Isso é fiel ao artigo original, que usa
+  o mesmo mecanismo de movimento confinado a "workspaces" (só que com 2 botões; aqui
+  são 4). Implementado em `computeZones()`/`moveButtons()` em
+  `frontend/src/app/experiment/experiment.component.ts`.
+- **Feedback ancorado no botão**: "Você acertou +100" aparece acima do botão que foi
+  reforçado, e o custo ("−N") aparece abaixo do botão respondido — em vez de um banner
+  genérico no topo da tela — imitando a Figura do Apêndice A do artigo original.
+
+Não implementado (fora do escopo pedido): os 4 símbolos de baralho do artigo original,
+o fundo de praia, e a pesquisa pós-sessão (estratégia, nível de estresse, daltonismo).
+
+## Dados por fase e por bin (regra fixa deste projeto)
+
+Além do log bruto de eventos, o backend recalcula automaticamente — a cada upload de
+eventos de uma fase — três tabelas sempre desagregadas por fase:
+
+- **PhaseStat**: pontuação da fase (início/fim/delta).
+- **ButtonPhaseStat**: respostas/min e reforços/min por botão, por fase.
+- **PhaseBin**: contagem de respostas por botão em blocos de 10s (30 bins numa fase de
+  5 min) — unidade padrão de análise em pesquisas de ressurgência.
+
+Cálculo em `backend/experiment/analytics.py`, exportável em CSV pelo admin (3 links por
+sessão: Eventos / Por fase / Bins 10s) ou pelos endpoints
+`GET /api/sessions/{id}/export-phase-stats/` e `.../export-bins/`.
 
 ## Estrutura
 

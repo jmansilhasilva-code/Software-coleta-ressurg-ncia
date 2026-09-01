@@ -6,6 +6,7 @@ para SQLite local — útil para rodar o protótipo sem configurar o Supabase.
 """
 
 import os
+import sys
 from pathlib import Path
 
 import dj_database_url
@@ -75,8 +76,12 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 
 # Database — Supabase/Postgres via DATABASE_URL, ou SQLite local como fallback.
+# `manage.py test` sempre usa SQLite: o pooler do Supabase (plano gratuito) não
+# permite criar o banco de teste temporário que o test runner do Django precisa.
+RUNNING_TESTS = "test" in sys.argv or "pytest" in sys.modules
+
 DATABASE_URL = os.environ.get("DATABASE_URL")
-if DATABASE_URL:
+if DATABASE_URL and not RUNNING_TESTS:
     DATABASES = {
         "default": dj_database_url.parse(
             DATABASE_URL, conn_max_age=600, ssl_require=True

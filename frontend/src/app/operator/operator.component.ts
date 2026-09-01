@@ -46,6 +46,7 @@ export class OperatorComponent {
       age: this.age,
       sex: this.sex,
       group: this.group,
+      dev_mode: this.devMode,
     };
 
     this.api.createSession(payload).subscribe({

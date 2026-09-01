@@ -15,6 +15,12 @@ npm-debug.log*
 # OS
 .DS_Store
 
+# Artefatos de testes com Playwright (screenshots, traces)
+.playwright-mcp/
+
+# Estado local da ferramenta neural-memory (MCP)
+.neuralmemory/
+
 # Áudio grande (baixar localmente)
 # frontend/src/assets/WorstSound1.mp3
 

@@ -11,11 +11,13 @@ import {
  * servidor. Usado como fallback quando o backend não responde.
  */
 const SYMBOLS = ['▲', '■', '●', '◆', '★', '✚'];
-const ROLES: Role[] = ['R1', 'R2', 'CONTROL'];
+const ROLES: Role[] = ['R1', 'R2', 'CONTROL1', 'CONTROL2'];
+// Grade 2x2 bem espaçada — evita sobreposição inicial entre os 4 botões.
 const SLOTS = [
-  { x: 0.2, y: 0.3 },
-  { x: 0.5, y: 0.65 },
-  { x: 0.8, y: 0.3 },
+  { x: 0.18, y: 0.25 },
+  { x: 0.82, y: 0.25 },
+  { x: 0.18, y: 0.75 },
+  { x: 0.82, y: 0.75 },
 ];
 
 function shuffle<T>(arr: T[]): T[] {
@@ -44,7 +46,7 @@ export function buildLocalConfig(group?: GroupCode): ClientConfig {
   const groups: GroupCode[] = ['EXT', 'RC1000', 'SOM2', 'SOM5'];
   const g = group ?? groups[Math.floor(Math.random() * groups.length)];
 
-  const symbols = shuffle(SYMBOLS).slice(0, 3);
+  const symbols = shuffle(SYMBOLS).slice(0, 4);
   const slots = shuffle(SLOTS);
   const counterbalance = ROLES.reduce((acc, role, i) => {
     acc[role] = { symbol: symbols[i], ...slots[i] };
@@ -65,6 +67,9 @@ export function buildLocalConfig(group?: GroupCode): ClientConfig {
       feedback_flash_ms: 500,
       move_step_px: 20,
       move_interval_ms: 200,
+      changeover_delay_ms: 2000,
+      reinforcement_hide_ms: 1000,
+      punishment_hide_ms: 5000,
       phase2_contingency: phase2Contingency(g),
     },
   };

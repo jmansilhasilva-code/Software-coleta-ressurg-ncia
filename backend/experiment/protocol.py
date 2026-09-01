@@ -26,24 +26,43 @@ RC1000_POINTS = 1000            # custo elevado da Fase 2 (grupo RC1000)
 FEEDBACK_FLASH_MS = 500         # barra verde/vermelha por 0,5 s
 SOUND_DURATIONS_MS = {"SOM2": 2000, "SOM5": 5000}
 
+# Changeover delay (COD): trocar de botão bloqueia o reforço no novo botão por
+# esse período — evita reforçar a própria alternância entre respostas. Valor e
+# mecanismo (geral entre quaisquer botões) definidos com o orientador; segue a
+# tradição de esquemas concorrentes (~2 s), igual à média do VI desta tarefa.
+# Precedente em ressurgência: Sweeney & Shahan (2015) usaram 3 s com o mesmo
+# propósito (não reforçar R2 se R1 ocorreu nos últimos N segundos).
+CHANGEOVER_DELAY_MS = 2000
+
+# Botões somem da tela por um período após certos eventos (feedback claro de
+# que a consequência ocorreu). Confirmado com o usuário (31/08/2026): reforço
+# esconde por REINFORCEMENT_HIDE_MS; a PUNIÇÃO específica de R1 na Fase 2
+# (RC-1000 ou som aversivo) esconde por PUNISHMENT_HIDE_MS — o custo universal
+# de −1 (que ocorre em qualquer toque, em qualquer fase) NÃO aciona isso, ou os
+# botões sumiriam quase o tempo todo.
+REINFORCEMENT_HIDE_MS = 1000
+PUNISHMENT_HIDE_MS = 5000
+
 # Movimento dos botões
 MOVE_STEP_PX = 20
 MOVE_INTERVAL_MS = 200
 
 # Símbolos atribuíveis aos botões (contrabalanceados entre participantes)
 SYMBOLS = ["▲", "■", "●", "◆", "★", "✚"]
-ROLES = ["R1", "R2", "CONTROL"]
+ROLES = ["R1", "R2", "CONTROL1", "CONTROL2"]
 
 # Posições iniciais relativas (fração da arena 0..1), embaralhadas entre papéis
+# — grade 2x2 bem espaçada, para não haver sobreposição inicial entre os 4 botões.
 INITIAL_SLOTS = [
-    {"x": 0.20, "y": 0.30},
-    {"x": 0.50, "y": 0.65},
-    {"x": 0.80, "y": 0.30},
+    {"x": 0.18, "y": 0.25},
+    {"x": 0.82, "y": 0.25},
+    {"x": 0.18, "y": 0.75},
+    {"x": 0.82, "y": 0.75},
 ]
 
 
 def build_counterbalance(rng: random.Random | None = None) -> dict:
-    """Sorteia símbolo e posição inicial para cada papel (R1/R2/CONTROL)."""
+    """Sorteia símbolo e posição inicial para cada papel (R1/R2/CONTROL1/CONTROL2)."""
     rng = rng or random
     symbols = rng.sample(SYMBOLS, k=len(ROLES))
     slots = INITIAL_SLOTS[:]
@@ -82,6 +101,9 @@ def build_client_config(session) -> dict:
             "feedback_flash_ms": FEEDBACK_FLASH_MS,
             "move_step_px": MOVE_STEP_PX,
             "move_interval_ms": MOVE_INTERVAL_MS,
+            "changeover_delay_ms": CHANGEOVER_DELAY_MS,
+            "reinforcement_hide_ms": REINFORCEMENT_HIDE_MS,
+            "punishment_hide_ms": PUNISHMENT_HIDE_MS,
             "phase2_contingency": group_phase2_contingency(session.group),
         },
     }

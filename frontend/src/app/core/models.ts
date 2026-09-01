@@ -1,4 +1,4 @@
-export type Role = 'R1' | 'R2' | 'CONTROL';
+export type Role = 'R1' | 'R2' | 'CONTROL1' | 'CONTROL2';
 export type GroupCode = 'EXT' | 'RC1000' | 'SOM2' | 'SOM5';
 export type EventType = 'response' | 'reinforcement' | 'cost' | 'sound';
 
@@ -25,6 +25,9 @@ export interface ExperimentParams {
   feedback_flash_ms: number;
   move_step_px: number;
   move_interval_ms: number;
+  changeover_delay_ms: number;
+  reinforcement_hide_ms: number;
+  punishment_hide_ms: number;
   phase2_contingency: Phase2Contingency;
 }
 
@@ -45,6 +48,7 @@ export interface SessionCreatePayload {
   age?: number | null;
   sex?: string;
   group?: string; // vazio = atribuição balanceada
+  dev_mode?: boolean;
 }
 
 export interface EventLog {

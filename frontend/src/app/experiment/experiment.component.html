@@ -2,35 +2,70 @@
   <!-- Barra de pontos (sempre visível) -->
   <div class="topbar">
     <div class="points-bar" [class.green]="barFlash === 'green'" [class.red]="barFlash === 'red'">
-      <span class="points">{{ points }}</span>
+      <span class="coin">⭐</span>
+      <span class="points">{{ displayPoints }}</span>
+      <div
+        class="particle"
+        *ngFor="let p of particles"
+        [style.--dx.px]="p.dx"
+        [style.--dy.px]="p.dy"
+        [style.--hue]="p.hue"
+      ></div>
     </div>
     <div class="dev" *ngIf="devMode">
       Fase {{ phase }} · {{ config.group }} · {{ remainingS }}s
     </div>
   </div>
 
-  <!-- Feedback de reforço / custo -->
-  <div class="banner" *ngIf="showReinforcement">Você acertou 🙂</div>
-  <div class="cost" *ngIf="costText">{{ costText }}</div>
+  <!-- Arena com os quatro botões (R1, R2, dois controles) -->
+  <div #arena class="arena" [class.buttons-hidden]="buttonsHidden">
+    <!-- Quadrados/workspaces (adaptação do apêndice do estudo original: cada
+         botão se move só dentro do seu próprio "transparent-gray workspace") -->
+    <div
+      class="workspace"
+      *ngFor="let z of zones"
+      [style.left.px]="z.x"
+      [style.top.px]="z.y"
+      [style.width.px]="z.w"
+      [style.height.px]="z.h"
+    ></div>
 
-  <!-- Arena com os três botões -->
-  <div #arena class="arena">
     <button
       *ngFor="let b of buttons"
       class="play-btn"
       [style.left.px]="b.x"
       [style.top.px]="b.y"
-      [style.opacity]="b.opacity"
+      [style.opacity]="buttonsHidden ? 0 : b.opacity"
       (pointerdown)="onResponse(b.role, $event)"
       type="button"
     >
-      {{ b.symbol }}
+      <span class="play-btn-inner">{{ b.symbol }}</span>
     </button>
+
+    <!-- Feedback ancorado no botão (adaptação do apêndice do estudo original:
+         reforço aparece acima do botão, custo aparece abaixo dele) -->
+    <div
+      class="button-feedback reinforcement"
+      *ngIf="reinforcementFeedback"
+      [style.left.px]="reinforcementFeedback.x"
+      [style.top.px]="reinforcementFeedback.y"
+    >
+      {{ reinforcementFeedback.text }}
+    </div>
+    <div
+      class="button-feedback cost"
+      *ngIf="costFeedback"
+      [style.left.px]="costFeedback.x"
+      [style.top.px]="costFeedback.y"
+    >
+      {{ costFeedback.text }}
+    </div>
   </div>
 
   <!-- Overlay de início -->
   <div class="overlay" *ngIf="prestart">
     <div class="overlay-card">
+      <div class="overlay-emoji">🎮</div>
       <h2>Pronto para começar?</h2>
       <p>Toque nos símbolos para ganhar pontos. Tente fazer o máximo de pontos.</p>
       <button class="cta" (click)="begin()" type="button">Começar</button>
@@ -40,8 +75,10 @@
   <!-- Overlay de conclusão -->
   <div class="overlay" *ngIf="finished">
     <div class="overlay-card">
+      <div class="overlay-emoji">🏁</div>
       <h2>Sessão concluída</h2>
       <p>Obrigado pela participação!</p>
+      <div class="final-score"><span class="coin">⭐</span> {{ displayPoints }} pontos</div>
       <div class="actions">
         <button class="cta" (click)="downloadData()" type="button">Baixar dados (JSON)</button>
         <button class="ghost" (click)="backToOperator()" type="button">Nova sessão</button>

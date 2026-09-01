@@ -37,6 +37,7 @@ class SessionSerializer(serializers.ModelSerializer):
             "participant_detail",
             "group",
             "counterbalance",
+            "dev_mode",
             "status",
             "notes",
             "created_at",
@@ -58,6 +59,9 @@ class SessionCreateSerializer(serializers.Serializer):
     group = serializers.ChoiceField(
         choices=["EXT", "RC1000", "SOM2", "SOM5"], required=False, allow_blank=True, default=""
     )
+    # Necessário para calcular corretamente a duração de fase (300 s vs 30 s)
+    # ao agregar estatísticas por fase/bin no backend.
+    dev_mode = serializers.BooleanField(required=False, default=False)
 
 
 class EventBatchSerializer(serializers.Serializer):
