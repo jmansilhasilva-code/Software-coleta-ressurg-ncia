@@ -10,10 +10,11 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from . import analytics, protocol
+from . import analytics, exports, protocol
 from .models import Event, Group, Participant, Session
 from .serializers import (
     EventBatchSerializer,
+    ParticipantSerializer,
     SessionCreateSerializer,
     SessionSerializer,
 )
@@ -223,4 +224,26 @@ class SessionViewSet(viewsets.ModelViewSet):
                     b.cost_count,
                 ]
             )
+        return response
+
+
+class ParticipantViewSet(viewsets.ReadOnlyModelViewSet):
+    """Só leitura: participantes são criados via SessionViewSet.create()."""
+
+    queryset = Participant.objects.all()
+    serializer_class = ParticipantSerializer
+
+    @action(detail=True, methods=["get"], url_path="export-xlsx")
+    def export_xlsx(self, request, pk=None):
+        """Planilha Excel única do participante: uma aba por tipo de dado
+        (Resumo/Eventos/Por Fase/Bins 10s), sempre desagregada por fase."""
+        participant = self.get_object()
+        content = exports.build_participant_workbook(participant)
+        response = HttpResponse(
+            content,
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        response["Content-Disposition"] = (
+            f'attachment; filename="{exports.participant_filename(participant)}"'
+        )
         return response

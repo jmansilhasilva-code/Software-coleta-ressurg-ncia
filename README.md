@@ -148,6 +148,24 @@ Cálculo em `backend/experiment/analytics.py`, exportável em CSV pelo admin (3 
 sessão: Eventos / Por fase / Bins 10s) ou pelos endpoints
 `GET /api/sessions/{id}/export-phase-stats/` e `.../export-bins/`.
 
+## Planilha Excel por participante (regra fixa deste projeto)
+
+Além dos CSVs por sessão, cada **participante** tem uma planilha Excel (.xlsx) própria,
+para abrir direto no Excel — os dados nunca ficam soltos num único arquivo, sempre com
+uma aba por tipo de dado (e sempre desagregados por fase/bin dentro de cada aba):
+
+- **Resumo**: dados do participante (idade, sexo, data) e lista de suas sessões.
+- **Eventos**: log bruto de respostas/reforços/custos/sons.
+- **Por Fase**: pontuação, respostas/min e reforços/min por botão, por fase.
+- **Bins 10s**: contagem de respostas por botão em blocos de 10s.
+
+Cálculo em `backend/experiment/exports.py`. No admin (tela **Participants**), cada linha
+tem um link "Baixar .xlsx"; selecionando vários e escolhendo a ação "Exportar
+selecionados" baixa um `.zip` com um Excel por participante (nomeado com o ID
+interno para não haver conflito caso dois participantes tenham o mesmo identificador
+digitado pelo operador). Também disponível pelo endpoint
+`GET /api/participants/{id}/export-xlsx/`, e um atalho na tela de Sessions.
+
 ## Estrutura
 
 ```

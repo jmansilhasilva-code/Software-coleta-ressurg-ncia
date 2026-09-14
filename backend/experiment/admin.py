@@ -1,4 +1,6 @@
 import csv
+import io
+import zipfile
 
 from django.contrib import admin
 from django.db.models import Count
@@ -6,6 +8,7 @@ from django.http import HttpResponse
 from django.urls import reverse
 from django.utils.html import format_html
 
+from . import exports
 from .models import ButtonPhaseStat, Event, Participant, PhaseBin, PhaseStat, Session
 
 
@@ -126,10 +129,25 @@ def _write_bins_csv(response, bins_qs):
         )
 
 
+@admin.action(description="Exportar selecionados (Excel .xlsx, um arquivo por participante em .zip)")
+def export_participants_xlsx_zip(modeladmin, request, queryset):
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for participant in queryset:
+            zf.writestr(
+                exports.participant_filename(participant),
+                exports.build_participant_workbook(participant),
+            )
+    response = HttpResponse(buf.getvalue(), content_type="application/zip")
+    response["Content-Disposition"] = 'attachment; filename="participantes_ressurgencia.zip"'
+    return response
+
+
 @admin.register(Participant)
 class ParticipantAdmin(admin.ModelAdmin):
-    list_display = ["external_id", "id", "age", "sex", "n_sessions", "created_at"]
+    list_display = ["external_id", "id", "age", "sex", "n_sessions", "created_at", "baixar_excel"]
     search_fields = ["external_id", "id"]
+    actions = [export_participants_xlsx_zip]
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(_n=Count("sessions"))
@@ -137,6 +155,13 @@ class ParticipantAdmin(admin.ModelAdmin):
     @admin.display(description="Sessões", ordering="_n")
     def n_sessions(self, obj):
         return obj._n
+
+    @admin.display(description="Planilha")
+    def baixar_excel(self, obj):
+        return format_html(
+            '<a href="{}">Baixar .xlsx</a>',
+            reverse("participant-export-xlsx", args=[obj.id]),
+        )
 
 
 class EventInline(admin.TabularInline):
@@ -258,10 +283,12 @@ class SessionAdmin(admin.ModelAdmin):
     @admin.display(description="Planilhas")
     def baixar_csv(self, obj):
         return format_html(
-            '<a href="{}">Eventos</a> · <a href="{}">Por fase</a> · <a href="{}">Bins 10s</a>',
+            '<a href="{}">Eventos</a> · <a href="{}">Por fase</a> · <a href="{}">Bins 10s</a>'
+            ' · <a href="{}"><b>Excel (participante)</b></a>',
             reverse("session-export", args=[obj.id]),
             reverse("session-export-phase-stats", args=[obj.id]),
             reverse("session-export-bins", args=[obj.id]),
+            reverse("participant-export-xlsx", args=[obj.participant_id]),
         )
 
 

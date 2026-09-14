@@ -1,7 +1,10 @@
+import io
+
+from openpyxl import load_workbook
 from rest_framework.test import APITestCase
 
 from . import analytics
-from .models import ButtonPhaseStat, Event, PhaseBin, PhaseStat, Session
+from .models import ButtonPhaseStat, Event, Participant, PhaseBin, PhaseStat, Session
 from .protocol import build_counterbalance
 from .views import ALL_GROUPS, assign_balanced_group
 
@@ -177,3 +180,78 @@ class SessionFlowTests(APITestCase):
             ButtonPhaseStat.objects.filter(session=session, phase=1).count(), 4
         )
         self.assertEqual(PhaseBin.objects.filter(session=session, phase=1).count(), 4 * 30)
+
+
+class ParticipantExportTests(APITestCase):
+    """Regra: cada participante tem sua própria planilha Excel (.xlsx), com
+    abas separadas (Resumo/Eventos/Por Fase/Bins 10s) — nunca dados soltos."""
+
+    def _create_session_with_events(self, dev_mode=True):
+        resp = self.client.post(
+            "/api/sessions/",
+            {"external_id": "P010", "age": 30, "sex": "F", "dev_mode": dev_mode},
+            format="json",
+        )
+        sid = resp.data["session"]["id"]
+        pid = resp.data["session"]["participant"]
+        payload = {
+            "events": [
+                {"phase": 1, "event_type": "response", "button_role": "R1", "t_ms": 0, "points_delta": 0, "points_total": 0},
+                {"phase": 1, "event_type": "reinforcement", "button_role": "R1", "t_ms": 0, "points_delta": 100, "points_total": 100},
+            ]
+        }
+        self.client.post(f"/api/sessions/{sid}/events/", payload, format="json")
+        return pid, sid
+
+    def test_export_xlsx_has_one_sheet_per_data_type(self):
+        pid, sid = self._create_session_with_events()
+        resp = self.client.get(f"/api/participants/{pid}/export-xlsx/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(
+            resp["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        wb = load_workbook(io.BytesIO(resp.content))
+        self.assertEqual(set(wb.sheetnames), {"Resumo", "Eventos", "Por Fase", "Bins 10s"})
+
+    def test_export_xlsx_disaggregates_by_phase_and_bin(self):
+        pid, sid = self._create_session_with_events()
+        resp = self.client.get(f"/api/participants/{pid}/export-xlsx/")
+        wb = load_workbook(io.BytesIO(resp.content))
+
+        eventos = wb["Eventos"]
+        header = [c.value for c in eventos[1]]
+        self.assertIn("fase", header)
+        rows = list(eventos.iter_rows(min_row=2, values_only=True))
+        self.assertEqual(len(rows), 2)  # response + reinforcement
+
+        por_fase = wb["Por Fase"]
+        header_pf = [c.value for c in por_fase[1]]
+        for col in ["fase", "botao", "respostas", "reforcos_por_min"]:
+            self.assertIn(col, header_pf)
+
+        bins = wb["Bins 10s"]
+        header_bins = [c.value for c in bins[1]]
+        self.assertIn("bin_index", header_bins)
+        # dev_mode: fase de 30s / bins de 10s = 3 bins por botão -> 4 botões * 3 = 12
+        bin_rows = list(bins.iter_rows(min_row=2, values_only=True))
+        self.assertEqual(len(bin_rows), 12)
+
+    def test_export_xlsx_scopes_to_single_participant(self):
+        pid_a, _ = self._create_session_with_events()
+        resp_b = self.client.post(
+            "/api/sessions/", {"external_id": "P011"}, format="json"
+        )
+        pid_b = resp_b.data["session"]["participant"]
+
+        resp = self.client.get(f"/api/participants/{pid_a}/export-xlsx/")
+        wb = load_workbook(io.BytesIO(resp.content))
+        resumo = wb["Resumo"]
+        session_ids_in_sheet = [
+            row[0] for row in resumo.iter_rows(min_row=10, values_only=True) if row[0]
+        ]
+        # Nenhuma sessão do participante B deve aparecer na planilha do A.
+        other_sessions = set(
+            str(s) for s in Session.objects.filter(participant_id=pid_b).values_list("id", flat=True)
+        )
+        self.assertFalse(other_sessions & set(session_ids_in_sheet))
