@@ -33,6 +33,11 @@ const ZONE_GAP = 16; // px
 // de ler antes de sumir (decisão: 15/09/2026, deixar pontos bem visíveis).
 const FEEDBACK_TEXT_MS = 900;
 
+// Metade da largura máxima esperada do texto de feedback — usado para
+// impedir que ele seja cortado nas bordas da arena (overflow: hidden) quando
+// o botão está perto de um canto (corrigido: 16/09/2026).
+const FEEDBACK_HALF_WIDTH = 150; // px
+
 function shuffleInPlace<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -89,8 +94,11 @@ export class ExperimentComponent implements OnInit, AfterViewInit, OnDestroy {
   // Ancorado na posição do botão respondido (adaptação do apêndice do estudo
   // original: "+100" aparece acima do botão reforçado, custo aparece abaixo
   // do botão respondido — em vez de um banner genérico no topo da tela).
-  reinforcementFeedback: { x: number; y: number; text: string } | null = null;
-  costFeedback: { x: number; y: number; text: string } | null = null;
+  // `below`: true quando o texto deve aparecer ABAIXO do botão em vez do lado
+  // padrão — invertido perto das bordas da arena para nunca ser cortado
+  // (corrigido: 16/09/2026, o texto ficava cortado nos cantos da tela).
+  reinforcementFeedback: { x: number; y: number; text: string; below: boolean } | null = null;
+  costFeedback: { x: number; y: number; text: string; below: boolean } | null = null;
 
   // DevMode / depuração
   get devMode() {
@@ -389,14 +397,30 @@ export class ExperimentComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  /** Mostra "Você acertou +N" ancorado acima do botão que foi reforçado. */
+  /** Ponto de ancoragem do texto de feedback, limitado às bordas da arena
+   * (que tem overflow: hidden) para nunca ser cortado perto dos cantos.
+   * `below=true` = o texto deve aparecer abaixo do botão (usado quando o
+   * botão está na metade de cima da arena, onde falta espaço acima dele). */
+  private feedbackAnchor(btn: ButtonState): { x: number; y: number; below: boolean } {
+    const halfW = Math.min(FEEDBACK_HALF_WIDTH, Math.max(40, this.arenaW / 2 - 8));
+    const rawX = btn.x + BUTTON_SIZE / 2;
+    const x = Math.max(halfW, Math.min(this.arenaW - halfW, rawX));
+    const below = btn.y < this.arenaH / 2;
+    const y = below ? btn.y + BUTTON_SIZE : btn.y;
+    return { x, y, below };
+  }
+
+  /** Mostra "Você acertou +N" ancorado no botão que foi reforçado (acima,
+   * ou abaixo se o botão estiver perto do topo da arena). */
   private banner(role: Role): void {
     const btn = this.buttons.find((b) => b.role === role);
     if (!btn) return;
+    const anchor = this.feedbackAnchor(btn);
     this.zone.run(() => {
       this.reinforcementFeedback = {
-        x: btn.x + BUTTON_SIZE / 2,
-        y: btn.y,
+        x: anchor.x,
+        y: anchor.y,
+        below: anchor.below,
         text: `😄 Você acertou +${this.params.reinforcement_points}`,
       };
       setTimeout(() => {
@@ -405,14 +429,17 @@ export class ExperimentComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  /** Mostra "−N" ancorado abaixo do botão que sofreu o custo/punição. */
+  /** Mostra "−N" ancorado no botão que sofreu o custo/punição (abaixo, ou
+   * acima se o botão estiver perto da base da arena). */
   private flashCost(role: Role, amount: number): void {
     const btn = this.buttons.find((b) => b.role === role);
     if (!btn) return;
+    const anchor = this.feedbackAnchor(btn);
     this.zone.run(() => {
       this.costFeedback = {
-        x: btn.x + BUTTON_SIZE / 2,
-        y: btn.y + BUTTON_SIZE,
+        x: anchor.x,
+        y: anchor.y,
+        below: anchor.below,
         text: `−${amount}`,
       };
       setTimeout(() => {

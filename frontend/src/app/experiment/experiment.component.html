@@ -52,10 +52,12 @@
     </button>
 
     <!-- Feedback ancorado no botão (adaptação do apêndice do estudo original:
-         reforço aparece acima do botão, custo aparece abaixo dele) -->
+         reforço aparece acima do botão, custo aparece abaixo dele — invertido
+         perto das bordas da arena para nunca ser cortado, ver below/above). -->
     <div
       class="button-feedback reinforcement"
       *ngIf="reinforcementFeedback"
+      [class.below]="reinforcementFeedback.below"
       [style.left.px]="reinforcementFeedback.x"
       [style.top.px]="reinforcementFeedback.y"
     >
@@ -64,6 +66,7 @@
     <div
       class="button-feedback cost"
       *ngIf="costFeedback"
+      [class.above]="!costFeedback.below"
       [style.left.px]="costFeedback.x"
       [style.top.px]="costFeedback.y"
     >
