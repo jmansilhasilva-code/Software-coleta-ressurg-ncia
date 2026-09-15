@@ -23,18 +23,15 @@ import { SessionStore } from '../core/session-store.service';
 import { AudioService } from './audio.service';
 import { VISchedule } from './vi-schedule';
 
-/**
- * Ambiguidade no PDF: o "custo de resposta universal (−1)" é descrito como válido
- * "em todas as fases", mas a Fase 3 é descrita como extinção total (sem
- * consequências). O padrão experimental para um teste de ressurgência é Fase 3 em
- * extinção pura. Mantemos isso configurável aqui — confirmar com o orientador.
- */
-const UNIVERSAL_COST_IN_PHASE3 = false;
-
 const BUTTON_SIZE = 72; // px
 
 // Espaço entre os quadrados/workspaces e entre eles e a borda da arena.
 const ZONE_GAP = 16; // px
+
+// Duração do texto flutuante de feedback ("+100"/"−1") ancorado no botão —
+// mais longa que o flash rápido da barra (feedback_flash_ms), para dar tempo
+// de ler antes de sumir (decisão: 15/09/2026, deixar pontos bem visíveis).
+const FEEDBACK_TEXT_MS = 900;
 
 function shuffleInPlace<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -121,8 +118,14 @@ export class ExperimentComponent implements OnInit, AfterViewInit, OnDestroy {
   private lastRespondedRole: Role | null = null;
   private codBlockedUntilMs = 0;
 
+  /** Ponteiros (dedos) atualmente pressionados, por pointerId -> botão. Serve
+   * só para detectar toque simultâneo em 2+ botões (comum em telas
+   * touchscreen, por sobreposição/erro dos dedos) — único caso em que ainda
+   * existe custo de resposta (ver MULTI_TOUCH_COST_POINTS no backend). */
+  private activePointers = new Map<number, Role>();
+
   /** Botões somem da tela: 1s após reforço, 5s após a punição real da Fase 2
-   * (RC-1000 ou som — não o custo universal de −1, que não é "punição"). */
+   * (RC-1000 ou som — não o custo de multi-touch, que não é "punição"). */
   buttonsHidden = false;
   private buttonsHiddenUntilMs = 0;
 
@@ -243,36 +246,61 @@ export class ExperimentComponent implements OnInit, AfterViewInit, OnDestroy {
   // ---------------------------------------------------------------------------
   // Resposta do participante
   // ---------------------------------------------------------------------------
-  onResponse(role: Role, ev: Event): void {
+  onResponse(role: Role, ev: PointerEvent): void {
     ev.preventDefault();
     if (this.prestart || this.finished) return;
     const t = Math.round(performance.now() - this.startMs);
 
-    // 1) registra a resposta
+    // 0) toque simultâneo em 2+ botões (outro ponteiro/dedo já pressionado
+    // num botão diferente agora): não é uma resposta válida (comum em
+    // touchscreen, por sobreposição/erro dos dedos) — só regista e cobra o
+    // único custo de resposta que ainda existe, sem reforçar/punir.
+    const isMultiTouch = this.hasOtherButtonPressed(ev.pointerId, role);
+    this.activePointers.set(ev.pointerId, role);
     this.log('response', role, t, 0);
+    if (isMultiTouch) {
+      this.cost(role, t, this.params.multi_touch_cost_points);
+      return;
+    }
 
-    // 2) changeover delay: alternar para um botão diferente bloqueia reforço
+    // 1) changeover delay: alternar para um botão diferente bloqueia reforço
     // nesse botão pelos próximos `changeover_delay_ms`.
     if (this.lastRespondedRole !== null && role !== this.lastRespondedRole) {
       this.codBlockedUntilMs = t + this.params.changeover_delay_ms;
     }
     this.lastRespondedRole = role;
 
-    // 3) controle de estímulo por opacidade
+    // 2) controle de estímulo por opacidade
     this.applyOpacity(role);
 
-    // 4) consequências por fase
+    // 3) consequências por fase
     if (this.phase === 1) {
       this.phase1Consequences(role, t);
     } else if (this.phase === 2) {
       this.phase2Consequences(role, t);
-    } else {
-      this.phase3Consequences(role, t);
     }
+    // Fase 3: extinção pura, nenhuma consequência.
+  }
+
+  /** Libera o ponteiro do rastreamento de multi-touch ao soltar o dedo/botão
+   * do mouse — em qualquer lugar da tela, não só em cima do botão. */
+  @HostListener('window:pointerup', ['$event'])
+  @HostListener('window:pointercancel', ['$event'])
+  onGlobalPointerEnd(ev: PointerEvent): void {
+    this.activePointers.delete(ev.pointerId);
+  }
+
+  /** Há outro ponteiro pressionado agora num botão diferente do atual? */
+  private hasOtherButtonPressed(pointerId: number, role: Role): boolean {
+    for (const [pid, r] of this.activePointers) {
+      if (pid !== pointerId && r !== role) return true;
+    }
+    return false;
   }
 
   private phase1Consequences(role: Role, t: number): void {
-    // reforço primeiro (se R1, fora do COD e VI disponível), depois custo universal
+    // Único botão com consequência na Fase 1 é R1 (reforço); R2 e os
+    // controles não têm nenhuma consequência ao serem tocados.
     const codActive = t < this.codBlockedUntilMs;
     if (
       role === 'R1' &&
@@ -281,7 +309,6 @@ export class ExperimentComponent implements OnInit, AfterViewInit, OnDestroy {
     ) {
       this.reinforce(role, t);
     }
-    this.cost(role, t, this.params.response_cost_points);
   }
 
   private phase2Consequences(role: Role, t: number): void {
@@ -295,29 +322,22 @@ export class ExperimentComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     if (role === 'R1') {
       const c = this.params.phase2_contingency;
-      // Punição REAL: som aversivo OU custo acima do universal (RC-1000). Para
-      // o grupo EXT, phase2_contingency é idêntica ao custo universal — não é
-      // punição, é extinção simples — então não deve esconder os botões.
-      const isRealPunishment =
-        c.sound_ms > 0 || c.cost_points > this.params.response_cost_points;
+      // Punição REAL: som aversivo OU custo (RC-1000). Grupos EXT/SOM2/SOM5
+      // têm cost_points=0 (extinção pura ou só o som) — não escondem os
+      // botões por causa de custo, só se houver som.
+      const isRealPunishment = c.sound_ms > 0 || c.cost_points > 0;
       if (c.sound_ms > 0) {
         this.audio.play(c.sound_ms);
         this.log('sound', role, t, 0, c.sound_ms);
       }
-      this.cost(role, t, c.cost_points);
+      if (c.cost_points > 0) {
+        this.cost(role, t, c.cost_points);
+      }
       if (isRealPunishment) {
         this.hideButtonsFor(this.params.punishment_hide_ms);
       }
-    } else {
-      this.cost(role, t, this.params.response_cost_points);
     }
-  }
-
-  private phase3Consequences(role: Role, t: number): void {
-    if (UNIVERSAL_COST_IN_PHASE3) {
-      this.cost(role, t, this.params.response_cost_points);
-    }
-    // caso contrário: extinção pura (nenhuma consequência)
+    // R2 fora do reforço e os controles: nenhuma consequência.
   }
 
   private reinforce(role: Role, t: number): void {
@@ -381,7 +401,7 @@ export class ExperimentComponent implements OnInit, AfterViewInit, OnDestroy {
       };
       setTimeout(() => {
         this.zone.run(() => (this.reinforcementFeedback = null));
-      }, this.params.feedback_flash_ms);
+      }, FEEDBACK_TEXT_MS);
     });
   }
 
@@ -397,7 +417,7 @@ export class ExperimentComponent implements OnInit, AfterViewInit, OnDestroy {
       };
       setTimeout(() => {
         this.zone.run(() => (this.costFeedback = null));
-      }, this.params.feedback_flash_ms);
+      }, FEEDBACK_TEXT_MS);
     });
   }
 

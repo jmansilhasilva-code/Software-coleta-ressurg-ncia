@@ -20,8 +20,16 @@ N_PHASES = 3
 
 VI_SECONDS = 2.0                # esquema VI 2 s (Fase 1: R1; Fase 2: R2)
 REINFORCEMENT_POINTS = 100      # +100 pts por reforço
-RESPONSE_COST_POINTS = 1        # custo de resposta universal: −1 pt por toque em botão
 RC1000_POINTS = 1000            # custo elevado da Fase 2 (grupo RC1000)
+
+# Não existe mais custo de resposta universal (decisão do orientador,
+# 15/09/2026): tocar em qualquer botão (inclusive os de controle) não tem
+# nenhuma consequência por si só. O único custo de −1 pt que resta é técnico,
+# não comportamental: cobre o caso de o participante tocar em 2+ botões ao
+# mesmo tempo (comum em telas touchscreen, por erro/sobreposição dos dedos) —
+# aplicado inteiramente no cliente, ver MULTI_TOUCH_COST_POINTS em
+# experiment.component.ts.
+MULTI_TOUCH_COST_POINTS = 1
 
 FEEDBACK_FLASH_MS = 500         # barra verde/vermelha por 0,5 s
 SOUND_DURATIONS_MS = {"SOM2": 2000, "SOM5": 5000}
@@ -37,9 +45,9 @@ CHANGEOVER_DELAY_MS = 2000
 # Botões somem da tela por um período após certos eventos (feedback claro de
 # que a consequência ocorreu). Confirmado com o usuário (31/08/2026): reforço
 # esconde por REINFORCEMENT_HIDE_MS; a PUNIÇÃO específica de R1 na Fase 2
-# (RC-1000 ou som aversivo) esconde por PUNISHMENT_HIDE_MS — o custo universal
-# de −1 (que ocorre em qualquer toque, em qualquer fase) NÃO aciona isso, ou os
-# botões sumiriam quase o tempo todo.
+# (RC-1000 ou som aversivo) esconde por PUNISHMENT_HIDE_MS — o custo de
+# multi-touch (MULTI_TOUCH_COST_POINTS, que pode ocorrer em qualquer fase) NÃO
+# aciona isso, pois não é punição, é só correção de um toque acidental.
 REINFORCEMENT_HIDE_MS = 1000
 PUNISHMENT_HIDE_MS = 5000
 
@@ -78,11 +86,11 @@ def group_phase2_contingency(group: str) -> dict:
     if group == Group.RC1000:
         return {"cost_points": RC1000_POINTS, "sound_ms": 0}
     if group == Group.SOM2:
-        return {"cost_points": RESPONSE_COST_POINTS, "sound_ms": SOUND_DURATIONS_MS["SOM2"]}
+        return {"cost_points": 0, "sound_ms": SOUND_DURATIONS_MS["SOM2"]}
     if group == Group.SOM5:
-        return {"cost_points": RESPONSE_COST_POINTS, "sound_ms": SOUND_DURATIONS_MS["SOM5"]}
-    # EXT (controle): apenas o custo universal
-    return {"cost_points": RESPONSE_COST_POINTS, "sound_ms": 0}
+        return {"cost_points": 0, "sound_ms": SOUND_DURATIONS_MS["SOM5"]}
+    # EXT (controle): extinção pura, nenhuma consequência além da ausência de reforço.
+    return {"cost_points": 0, "sound_ms": 0}
 
 
 def build_client_config(session) -> dict:
@@ -97,7 +105,7 @@ def build_client_config(session) -> dict:
             "n_phases": N_PHASES,
             "vi_seconds": VI_SECONDS,
             "reinforcement_points": REINFORCEMENT_POINTS,
-            "response_cost_points": RESPONSE_COST_POINTS,
+            "multi_touch_cost_points": MULTI_TOUCH_COST_POINTS,
             "feedback_flash_ms": FEEDBACK_FLASH_MS,
             "move_step_px": MOVE_STEP_PX,
             "move_interval_ms": MOVE_INTERVAL_MS,

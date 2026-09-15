@@ -50,7 +50,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.25),
     0 0 0 4px rgba(52, 217, 114, 0.25),
     0 4px 14px rgba(22, 163, 74, 0.4);
-  animation: bar-pop 0.35s ease-out;
+  animation: bar-pop 0.45s ease-out;
 }
 
 .points-bar.red {
@@ -59,7 +59,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.25),
     0 0 0 4px rgba(245, 101, 101, 0.22),
     0 4px 14px rgba(220, 38, 38, 0.35);
-  animation: bar-pop 0.35s ease-out;
+  animation: bar-pop 0.45s ease-out;
 }
 
 @keyframes bar-pop {
@@ -67,7 +67,7 @@
     transform: scale(1);
   }
   35% {
-    transform: scale(1.06);
+    transform: scale(1.16);
   }
   100% {
     transform: scale(1);
@@ -81,7 +81,7 @@
 }
 
 .points {
-  font-size: 1.4rem;
+  font-size: 1.9rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: #fff;
@@ -127,21 +127,25 @@
   position: absolute;
   white-space: nowrap;
   font-weight: 800;
-  font-size: 0.85rem;
-  padding: 0.3rem 0.65rem;
+  padding: 0.4rem 0.85rem;
   border-radius: 999px;
   z-index: 5;
   pointer-events: none;
 }
 
+/* Maior e mais visível (pedido: 15/09/2026) — sobe e desaparece sozinho após
+   ~0,9s (FEEDBACK_TEXT_MS no componente), então nunca fica bloqueando os
+   botões nem atrapalha o ritmo do jogo. */
 .button-feedback.reinforcement {
   left: 0;
   top: 0;
+  font-size: 1.65rem;
   transform: translate(-50%, calc(-100% - 6px));
   background: linear-gradient(135deg, #22c55e, #16a34a);
   color: #fff;
-  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.4);
-  animation: banner-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 8px 24px rgba(22, 163, 74, 0.5);
+  animation: banner-pop 0.9s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes banner-pop {
@@ -149,13 +153,17 @@
     opacity: 0;
     transform: translate(-50%, calc(-100% - 6px)) scale(0.6);
   }
-  60% {
+  30% {
     opacity: 1;
-    transform: translate(-50%, calc(-100% - 6px)) scale(1.08);
+    transform: translate(-50%, calc(-100% - 6px)) scale(1.18);
   }
-  100% {
+  55% {
     opacity: 1;
     transform: translate(-50%, calc(-100% - 6px)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, calc(-190% - 6px)) scale(1);
   }
 }
 
@@ -165,9 +173,10 @@
   transform: translate(-50%, 6px);
   color: #fff;
   background: linear-gradient(135deg, #f87171, #dc2626);
-  font-size: 1rem;
-  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.35);
-  animation: cost-drop 0.4s ease-out;
+  font-size: 1.4rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+  animation: cost-drop 0.9s ease-out;
 }
 
 @keyframes cost-drop {
@@ -175,9 +184,17 @@
     opacity: 0;
     transform: translate(-50%, 0) scale(0.85);
   }
-  100% {
+  25% {
+    opacity: 1;
+    transform: translate(-50%, 6px) scale(1.1);
+  }
+  55% {
     opacity: 1;
     transform: translate(-50%, 6px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 60px) scale(1);
   }
 }
 

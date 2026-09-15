@@ -16,11 +16,12 @@ iteração.
 > do fone/dispositivo e exige calibração física externa. O app toca num ganho fixo
 > normalizado.
 
-> ⚠️ **Ambiguidade do protocolo (confirmar com o orientador):** o PDF diz que o custo de
-> resposta universal (−1) vale "em todas as fases", mas descreve a Fase 3 como extinção
-> total. O padrão experimental de um teste de ressurgência é Fase 3 em **extinção pura**.
-> Implementado assim; alternável na constante `UNIVERSAL_COST_IN_PHASE3` em
-> `frontend/src/app/experiment/experiment.component.ts`.
+> ✅ **Decisão do orientador (15/09/2026):** não existe mais custo de resposta
+> universal. Tocar em qualquer botão — inclusive os de controle — não tem nenhuma
+> consequência por si só. O único custo de −1 pt que resta é técnico, não
+> comportamental: cobre o caso de o participante tocar em 2+ botões ao mesmo tempo
+> (comum em telas touchscreen, por sobreposição/erro dos dedos). Ver seção
+> "Custo de resposta" abaixo.
 
 > ⚠️ **Opacidade dos botões:** o PDF descreve o esmaecimento para 2 botões, mas há 4
 > (R1, R2, CONTROL1, CONTROL2). Implementado: último botão tocado a 100%, os
@@ -103,10 +104,21 @@ em `backend/.env`.
 
 | Grupo    | Contingência de R1 na Fase 2                     |
 |----------|--------------------------------------------------|
-| `EXT`    | Extinção simples (só custo universal −1)         |
+| `EXT`    | Extinção pura (nenhuma consequência)             |
 | `RC1000` | Custo de −1000 pts (sem som)                     |
-| `SOM2`   | Custo −1 + som aversivo de 2 s                   |
-| `SOM5`   | Custo −1 + som aversivo de 5 s                   |
+| `SOM2`   | Som aversivo de 2 s (sem custo)                  |
+| `SOM5`   | Som aversivo de 5 s (sem custo)                  |
+
+## Custo de resposta (só existe 1 caso)
+
+Não existe custo de resposta universal: tocar em R1, R2 ou nos botões de controle
+não tem nenhuma consequência por si só (fora do reforço/punição já descritos acima).
+O único custo que resta (−1 pt) é técnico, não comportamental — cobre o toque
+simultâneo em 2+ botões diferentes (comum em telas touchscreen, por sobreposição/erro
+dos dedos): a resposta é registrada, mas não conta para reforço/punição, só desconta
+1 ponto. Detectado no cliente rastreando `pointerId`s simultâneos (ver
+`hasOtherButtonPressed()` em `frontend/src/app/experiment/experiment.component.ts`);
+valor em `MULTI_TOUCH_COST_POINTS`, `backend/experiment/protocol.py`.
 
 ## Changeover delay (COD)
 

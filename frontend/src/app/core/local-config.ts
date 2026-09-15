@@ -34,11 +34,12 @@ function phase2Contingency(group: GroupCode): Phase2Contingency {
     case 'RC1000':
       return { cost_points: 1000, sound_ms: 0 };
     case 'SOM2':
-      return { cost_points: 1, sound_ms: 2000 };
+      return { cost_points: 0, sound_ms: 2000 };
     case 'SOM5':
-      return { cost_points: 1, sound_ms: 5000 };
+      return { cost_points: 0, sound_ms: 5000 };
     default:
-      return { cost_points: 1, sound_ms: 0 };
+      // EXT: extinção pura, nenhuma consequência além da ausência de reforço.
+      return { cost_points: 0, sound_ms: 0 };
   }
 }
 
@@ -63,7 +64,7 @@ export function buildLocalConfig(group?: GroupCode): ClientConfig {
       n_phases: 3,
       vi_seconds: 2.0,
       reinforcement_points: 100,
-      response_cost_points: 1,
+      multi_touch_cost_points: 1,
       feedback_flash_ms: 500,
       move_step_px: 20,
       move_interval_ms: 200,

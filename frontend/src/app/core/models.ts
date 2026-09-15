@@ -11,7 +11,7 @@ export interface RolePlacement {
 export type Counterbalance = Record<Role, RolePlacement>;
 
 export interface Phase2Contingency {
-  cost_points: number; // custo aplicado a R1 na Fase 2 (1 ou 1000)
+  cost_points: number; // custo aplicado a R1 na Fase 2 (0 ou 1000 — RC1000)
   sound_ms: number; // duração do som aversivo (0 se não houver)
 }
 
@@ -21,7 +21,11 @@ export interface ExperimentParams {
   n_phases: number;
   vi_seconds: number;
   reinforcement_points: number;
-  response_cost_points: number;
+  // Não existe custo de resposta universal: tocar em qualquer botão (mesmo os
+  // de controle) não tem nenhuma consequência por si só. Este é o único custo
+  // de −1 pt que resta — técnico, não comportamental: cobre o caso de o
+  // participante tocar em 2+ botões ao mesmo tempo (comum em touchscreen).
+  multi_touch_cost_points: number;
   feedback_flash_ms: number;
   move_step_px: number;
   move_interval_ms: number;
