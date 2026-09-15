@@ -21,7 +21,13 @@
   </div>
 
   <!-- Arena com os quatro botões (R1, R2, dois controles) -->
-  <div #arena class="arena" [class.buttons-hidden]="buttonsHidden">
+  <div
+    #arena
+    class="arena"
+    [class.buttons-hidden]="buttonsHidden"
+    [class.flash-green]="barFlash === 'green'"
+    [class.flash-red]="barFlash === 'red'"
+  >
     <!-- Quadrados/workspaces (adaptação do apêndice do estudo original: cada
          botão se move só dentro do seu próprio "transparent-gray workspace") -->
     <div
